@@ -3,12 +3,12 @@
 import { Plus } from "lucide-react"
 import { Droppable, Draggable } from "@hello-pangea/dnd"
 import Card from "./Card"
-import { type Column as ColumnType } from "@/types/board"
+import { type Column as ColumnType, type Card as CardType } from "@/types/board"
 
 interface ColumnProps {
   column: ColumnType
   onAddCard: () => void
-  onEditCard: (card: Card) => void
+  onEditCard: (card: CardType) => void
   onDeleteCard: (cardId: string) => void
   onArchiveCard: (cardId: string) => void
 }

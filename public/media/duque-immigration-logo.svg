@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1728" height="594" viewBox="0 0 1728 594" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" fill-rule="evenodd">
+    <!-- Red Circle with Maple Leaf -->
+    <circle cx="286" cy="286" r="286" fill="#E31837"/>
+    <!-- White Maple Leaf -->
+    <path d="M286 100
+      l-35 65c-10 20-30 35-50 40l-60 15 45 45c15 15 25 35 25 55v40
+      l55-30c20-10 40-10 60 0l55 30v-40c0-20 10-40 25-55l45-45-60-15
+      c-20-5-40-20-50-40z" fill="#FFFFFF"/>
+    <!-- DUQUE Text -->
+    <g fill="#58595B" transform="translate(573, 148.7)">
+      <path d="M0 0h1155v148.7H0z"/>
+    </g>
+    <!-- IMMIGRATION Text -->
+    <g fill="#58595B" transform="translate(573, 445.3)">
+      <path d="M0 0h1155v148.7H0z"/>
+    </g>
+  </g>
+</svg> 
