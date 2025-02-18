@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { Share2, Filter, LayoutGrid, Archive, FileText } from "lucide-react"
+import { Share2, Filter, LayoutGrid, Archive, FileText, LogOut } from "lucide-react"
 import { DragDropContext, Droppable } from "@hello-pangea/dnd"
 import Column from "./Column"
 import FilterSystem from "./FilterSystem"
@@ -15,6 +15,9 @@ import { sortCards } from "@/utils/sortCards"
 import SortMenu from "./SortMenu"
 import ArchivedCards from "./ArchivedCards"
 import CardTemplates from "./CardTemplates"
+import { useSession, signOut } from 'next-auth/react'
+import Image from 'next/image'
+import Link from 'next/link'
 
 type Priority = 'low' | 'medium' | 'high' | undefined;
 
@@ -83,6 +86,7 @@ const availableLabels = [
 ]
 
 export default function Board() {
+  const { data: session } = useSession()
   const [columns, setColumns] = useState(initialColumns)
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -102,6 +106,7 @@ export default function Board() {
   } | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
+  const [showSortMenu, setShowSortMenu] = useState(false)
 
   const onDragEnd = (result: any) => {
     const { destination, source, draggableId } = result
@@ -351,118 +356,210 @@ export default function Board() {
     }
   })
 
+  const handleSignOut = async () => {
+    console.log('Starting sign out...')
+    try {
+      await signOut({ 
+        callbackUrl: '/',
+        redirect: true
+      })
+      console.log('Sign out successful')
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }
+
   return (
-    <div className="flex-1 overflow-x-auto">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-6">
+    <div className="h-screen flex flex-col bg-[#1D2125] overflow-hidden">
+      <header className="border-b border-gray-800 p-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold">Project Board</h1>
-            <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20">
-                <LayoutGrid size={16} />
-                <span>Board View</span>
-              </button>
-              <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20"
+            <Link href="/">
+              <Image
+                src="/media/Duque-Immigration-Logo-3.png"
+                alt="Duque Immigration Services (DIS) Inc."
+                width={120}
+                height={40}
+                className="h-8 w-auto cursor-pointer"
+                priority
+              />
+            </Link>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white"
+            >
+              <Filter size={20} />
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white"
+            >
+              <FileText size={20} />
+            </button>
+            <button
+              onClick={() => setShowArchived(true)}
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white"
+            >
+              <Archive size={20} />
+            </button>
+            <button
+              onClick={() => setShowActivityLog(!showActivityLog)}
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white"
+            >
+              <Share2 size={20} />
+            </button>
+            <button
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white"
+            >
+              <LayoutGrid size={20} />
+            </button>
+
+            {/* User Profile Section */}
+            <div className="flex items-center space-x-3 ml-4 border-l border-gray-800 pl-4">
+              {session?.user?.image ? (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name || "User"}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-[#E31837] rounded-full flex items-center justify-center text-white font-medium">
+                  {session?.user?.name?.[0] || "U"}
+                </div>
+              )}
+              <span className="text-sm text-gray-300">
+                {session?.user?.name}
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
-                <Filter size={16} />
-                <span>Filter</span>
-              </button>
-              <SortMenu onSort={handleSort} />
-              <button 
-                onClick={() => setShowArchived(true)}
-                className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20"
-              >
-                <Archive size={16} />
-                <span>Archived</span>
+                <LogOut size={16} />
+                <span>Sign out</span>
               </button>
             </div>
           </div>
-          <button 
-            onClick={() => setShowTemplates(true)}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-[#579DFF] rounded hover:bg-[#579DFF]/90"
-          >
-            <FileText size={16} />
-            <span>Templates</span>
-          </button>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-x-auto">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-semibold">Project Board</h1>
+              <div className="flex items-center space-x-2">
+                <button className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20">
+                  <LayoutGrid size={16} />
+                  <span>Board View</span>
+                </button>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20"
+                >
+                  <Filter size={16} />
+                  <span>Filter</span>
+                </button>
+                <SortMenu onSort={handleSort} />
+                <button 
+                  onClick={() => setShowArchived(true)}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-white/10 rounded hover:bg-white/20"
+                >
+                  <Archive size={16} />
+                  <span>Archived</span>
+                </button>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowTemplates(true)}
+              className="flex items-center space-x-1 px-3 py-1.5 bg-[#579DFF] rounded hover:bg-[#579DFF]/90"
+            >
+              <FileText size={16} />
+              <span>Templates</span>
+            </button>
+          </div>
+
+          {showFilters && (
+            <FilterSystem 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedLabels={selectedLabels}
+              onLabelChange={setSelectedLabels}
+              selectedPriorities={selectedPriorities}
+              onPriorityChange={setSelectedPriorities}
+              availableLabels={availableLabels}
+              onClearFilters={clearFilters}
+            />
+          )}
+          
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex space-x-4 overflow-x-auto pb-4">
+              {filteredAndSortedColumns.map((column) => (
+                <Column 
+                  key={column.id} 
+                  column={column}
+                  onAddCard={() => setEditingCard({ columnId: column.id })}
+                  onEditCard={(card) => setEditingCard({ card, columnId: column.id })}
+                  onDeleteCard={handleDeleteCard}
+                  onArchiveCard={handleArchiveCard}
+                />
+              ))}
+            </div>
+          </DragDropContext>
+
+          {editingCard && (
+            <CardModal
+              card={editingCard.card}
+              onClose={() => setEditingCard(null)}
+              onSave={handleCardSave}
+              onDelete={handleDeleteCard}
+              availableLabels={availableLabels}
+            />
+          )}
+
+          {confirmDialog.show && (
+            <ConfirmDialog
+              title="Delete Card"
+              message="Are you sure you want to delete this card? This action cannot be undone."
+              confirmLabel="Delete"
+              onConfirm={confirmDeleteCard}
+              onCancel={() => setConfirmDialog({ show: false, action: 'delete' })}
+              isDestructive
+            />
+          )}
+
+          {showArchived && (
+            <ArchivedCards
+              cards={columns.flatMap(col => col.cards)}
+              onClose={() => setShowArchived(false)}
+              onRestore={handleRestoreCard}
+            />
+          )}
+
+          {showTemplates && (
+            <CardTemplates
+              onClose={() => setShowTemplates(false)}
+              onUseTemplate={handleUseTemplate}
+            />
+          )}
         </div>
 
-        {showFilters && (
-          <FilterSystem 
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            selectedLabels={selectedLabels}
-            onLabelChange={setSelectedLabels}
-            selectedPriorities={selectedPriorities}
-            onPriorityChange={setSelectedPriorities}
-            availableLabels={availableLabels}
-            onClearFilters={clearFilters}
-          />
-        )}
-        
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex space-x-4 overflow-x-auto pb-4">
-            {filteredAndSortedColumns.map((column) => (
-              <Column 
-                key={column.id} 
-                column={column}
-                onAddCard={() => setEditingCard({ columnId: column.id })}
-                onEditCard={(card) => setEditingCard({ card, columnId: column.id })}
-                onDeleteCard={handleDeleteCard}
-                onArchiveCard={handleArchiveCard}
-              />
-            ))}
+        <div className="flex">
+          <div className="flex-1">
+            {/* ... existing board content ... */}
           </div>
-        </DragDropContext>
-
-        {editingCard && (
-          <CardModal
-            card={editingCard.card}
-            onClose={() => setEditingCard(null)}
-            onSave={handleCardSave}
-            onDelete={handleDeleteCard}
-            availableLabels={availableLabels}
-          />
-        )}
-
-        {confirmDialog.show && (
-          <ConfirmDialog
-            title="Delete Card"
-            message="Are you sure you want to delete this card? This action cannot be undone."
-            confirmLabel="Delete"
-            onConfirm={confirmDeleteCard}
-            onCancel={() => setConfirmDialog({ show: false, action: 'delete' })}
-            isDestructive
-          />
-        )}
-
-        {showArchived && (
-          <ArchivedCards
-            cards={columns.flatMap(col => col.cards)}
-            onClose={() => setShowArchived(false)}
-            onRestore={handleRestoreCard}
-          />
-        )}
-
-        {showTemplates && (
-          <CardTemplates
-            onClose={() => setShowTemplates(false)}
-            onUseTemplate={handleUseTemplate}
-          />
-        )}
-      </div>
-
-      <div className="flex">
-        <div className="flex-1">
-          {/* ... existing board content ... */}
+          
+          {showActivityLog && (
+            <div className="w-80 border-l border-gray-700 p-4 overflow-y-auto">
+              <ActivityLog activities={activities} />
+            </div>
+          )}
         </div>
-        
-        {showActivityLog && (
-          <div className="w-80 border-l border-gray-700 p-4 overflow-y-auto">
-            <ActivityLog activities={activities} />
-          </div>
-        )}
       </div>
     </div>
   )

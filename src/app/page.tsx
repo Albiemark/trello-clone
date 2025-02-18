@@ -4,7 +4,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
 export default async function LandingPage() {
+  console.log('Landing page render start')
   const session = await getServerSession(authOptions)
+  console.log('Session state:', !!session)
   
   return (
     <div className="min-h-screen bg-[#1D2125]">

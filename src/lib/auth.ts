@@ -13,7 +13,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      return url.startsWith(baseUrl) ? url : `${baseUrl}/board`
+      console.log('Auth redirect:', { url, baseUrl })
+      const redirectUrl = url.startsWith(baseUrl) ? url : `${baseUrl}/board`
+      console.log('Redirecting to:', redirectUrl)
+      return redirectUrl
+    },
+    async session({ session, token }) {
+      console.log('Session callback:', { session, token })
+      return session
+    },
+  },
+  events: {
+    signOut: async (message) => {
+      console.log('Sign out event:', message)
     },
   },
 } 
