@@ -1,15 +1,11 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Share2, Filter, LayoutGrid, Archive, FileText, LogOut } from "lucide-react"
 import { DragDropContext, Droppable } from "@hello-pangea/dnd"
 import Column from "./Column"
 import FilterSystem from "./FilterSystem"
 import { type Column as ColumnType, type Card, type Activity } from "@/types/board"
-import { useState } from "react"
-import CardModal from "./CardModal"
-import ConfirmDialog from "@/components/shared/ConfirmDialog"
-import ActivityLog from "./ActivityLog"
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { sortCards } from "@/utils/sortCards"
 import SortMenu from "./SortMenu"
@@ -18,6 +14,9 @@ import CardTemplates from "./CardTemplates"
 import { useSession, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
+import CardModal from "./CardModal"
+import ConfirmDialog from "@/components/shared/ConfirmDialog"
+import ActivityLog from "./ActivityLog"
 
 type Priority = 'low' | 'medium' | 'high' | undefined;
 
@@ -87,7 +86,8 @@ const availableLabels = [
 
 export default function Board() {
   const { data: session } = useSession()
-  const [columns, setColumns] = useState(initialColumns)
+  const [columns, setColumns] = useState<ColumnType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [editingCard, setEditingCard] = useState<{card?: Card, columnId: string} | null>(null)
@@ -107,6 +107,24 @@ export default function Board() {
   const [showArchived, setShowArchived] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showSortMenu, setShowSortMenu] = useState(false)
+
+  useEffect(() => {
+    const fetchBoard = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/board')
+        const data = await response.json()
+        if (data?.columns) {
+          setColumns(data.columns)
+        }
+      } catch (error) {
+        console.error('Failed to fetch board:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchBoard()
+  }, [])
 
   const onDragEnd = (result: any) => {
     const { destination, source, draggableId } = result
@@ -177,64 +195,90 @@ export default function Board() {
 
   useKeyboardShortcuts(toolbarProps)
 
-  const handleCardSave = (cardData: Partial<Card>) => {
-    if (!editingCard) return
+  const handleCardSave = async (columnId: string, cardData: Partial<Card>) => {
+    try {
+      const card = {
+        title: cardData.title?.trim() || "Untitled",
+        description: cardData.description?.trim(),
+        labels: cardData.labels,
+        priority: cardData.priority,
+        dueDate: cardData.dueDate,
+        columnId: columnId,
+        isArchived: false
+      }
 
-    const newCard: Card = {
-      id: editingCard.card?.id || `card-${Date.now()}`,
-      title: cardData.title || "Untitled",
-      description: cardData.description,
-      labels: cardData.labels || [],
-      attachments: editingCard.card?.attachments || [],
-      priority: cardData.priority,
-      dueDate: cardData.dueDate,
-      isArchived: false,
-    }
+      console.log('Sending card data:', card)
 
-    setColumns(prev => prev.map(column => {
-      if (column.id === editingCard.columnId) {
-        if (editingCard.card) {
-          addActivity({
-            cardId: newCard.id,
-            type: 'update',
-            description: `Updated "${newCard.title}"`,
-          })
-          return {
-            ...column,
-            cards: column.cards.map(card => 
-              card.id === editingCard.card?.id ? newCard : card
-            )
-          }
-        } else {
-          addActivity({
-            cardId: newCard.id,
-            type: 'create',
-            description: `Created "${newCard.title}"`,
-          })
-          return {
-            ...column,
-            cards: [...column.cards, newCard]
-          }
+      if (cardData.id) {
+        const response = await fetch(`/api/cards/${cardData.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cardData)
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update card')
+        }
+      } else {
+        const response = await fetch('/api/cards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(card)
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create card')
         }
       }
-      return column
-    }))
+
+      // Refresh board data
+      const response = await fetch('/api/board')
+      if (!response.ok) {
+        throw new Error('Failed to refresh board data')
+      }
+      
+      const data = await response.json()
+      if (data?.columns) {
+        setColumns(data.columns)
+        setEditingCard(null)
+      } else {
+        throw new Error('Invalid board data received')
+      }
+
+    } catch (error) {
+      console.error('Failed to save card:', error)
+      // Show error to user (you might want to add a toast notification system)
+      alert(error instanceof Error ? error.message : 'An unexpected error occurred')
+    }
   }
 
-  const handleDeleteCard = (cardId: string) => {
-    const card = columns.flatMap(col => col.cards).find(c => c.id === cardId)
-    if (card) {
-      addActivity({
-        cardId,
-        type: 'delete',
-        description: `Deleted "${card.title}"`,
-      })
-    }
+  const handleDeleteCard = async (cardId: string) => {
     setConfirmDialog({
       show: true,
       cardId,
       action: 'delete'
     })
+  }
+
+  const confirmDeleteCard = async () => {
+    if (!confirmDialog.cardId) return
+
+    try {
+      await fetch(`/api/cards/${confirmDialog.cardId}`, {
+        method: 'DELETE'
+      })
+
+      setColumns(prev => prev.map(column => ({
+        ...column,
+        cards: column.cards.filter(card => card.id !== confirmDialog.cardId)
+      })))
+
+      setConfirmDialog({ show: false, action: 'delete' })
+    } catch (error) {
+      console.error('Failed to delete card:', error)
+    }
   }
 
   const handleDuplicateCard = (cardId: string) => {
@@ -256,17 +300,6 @@ export default function Board() {
       }
       return column
     }))
-  }
-
-  const confirmDeleteCard = () => {
-    if (!confirmDialog.cardId) return
-
-    setColumns(prev => prev.map(column => ({
-      ...column,
-      cards: column.cards.filter(card => card.id !== confirmDialog.cardId)
-    })))
-
-    setConfirmDialog({ show: false, action: 'delete' })
   }
 
   const handleSort = (field: string, direction: 'asc' | 'desc') => {
@@ -327,7 +360,7 @@ export default function Board() {
   }
 
   const filteredAndSortedColumns = columns.map(column => {
-    let processedCards = column.cards.filter(card => {
+    let processedCards = (column.cards || []).filter(card => {
       if (card.isArchived) return false
 
       const searchLower = searchTerm.toLowerCase()
@@ -337,7 +370,7 @@ export default function Board() {
 
       const matchesLabels = 
         selectedLabels.length === 0 ||
-        card.labels.some(label => selectedLabels.includes(label.id))
+        (card.labels && card.labels.some(label => selectedLabels.includes(label.id)))
 
       const matchesPriorities =
         selectedPriorities.length === 0 ||
@@ -367,6 +400,15 @@ export default function Board() {
     } catch (error) {
       console.error('Sign out error:', error)
     }
+  }
+
+  const updateCard = async (cardId: string, updates: Partial<Card>) => {
+    await fetch(`/api/cards/${cardId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    })
+    // Refresh board data
   }
 
   return (
@@ -484,39 +526,58 @@ export default function Board() {
             </button>
           </div>
 
-          {showFilters && (
-            <FilterSystem 
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              selectedLabels={selectedLabels}
-              onLabelChange={setSelectedLabels}
-              selectedPriorities={selectedPriorities}
-              onPriorityChange={setSelectedPriorities}
-              availableLabels={availableLabels}
-              onClearFilters={clearFilters}
-            />
-          )}
-          
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex space-x-4 overflow-x-auto pb-4">
-              {filteredAndSortedColumns.map((column) => (
-                <Column 
-                  key={column.id} 
-                  column={column}
-                  onAddCard={() => setEditingCard({ columnId: column.id })}
-                  onEditCard={(card) => setEditingCard({ card, columnId: column.id })}
-                  onDeleteCard={handleDeleteCard}
-                  onArchiveCard={handleArchiveCard}
-                />
-              ))}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#579DFF]"></div>
             </div>
-          </DragDropContext>
+          ) : columns.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-gray-400">
+              No columns found. Please run the seed script.
+            </div>
+          ) : (
+            <>
+              {showFilters && (
+                <FilterSystem 
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  selectedLabels={selectedLabels}
+                  onLabelChange={setSelectedLabels}
+                  selectedPriorities={selectedPriorities}
+                  onPriorityChange={setSelectedPriorities}
+                  availableLabels={availableLabels}
+                  onClearFilters={clearFilters}
+                />
+              )}
+
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="flex space-x-4 overflow-x-auto pb-4">
+                  {filteredAndSortedColumns.map((column) => (
+                    <Column 
+                      key={column.id} 
+                      column={{
+                        id: column.id,
+                        title: column.title,
+                        cards: column.cards.map(card => ({
+                          ...card,
+                          attachments: card.attachments?.map(attachment => attachment.url)
+                        }))
+                      }}
+                      onAddCard={() => setEditingCard({ columnId: column.id })}
+                      onEditCard={(card) => setEditingCard({ card, columnId: column.id })}
+                      onDeleteCard={handleDeleteCard}
+                      onArchiveCard={handleArchiveCard}
+                    />
+                  ))}
+                </div>
+              </DragDropContext>
+            </>
+          )}
 
           {editingCard && (
             <CardModal
               card={editingCard.card}
               onClose={() => setEditingCard(null)}
-              onSave={handleCardSave}
+              onSave={(cardData) => handleCardSave(editingCard.columnId, cardData as Card)}
               onDelete={handleDeleteCard}
               availableLabels={availableLabels}
             />

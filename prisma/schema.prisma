@@ -1,0 +1,91 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Board {
+  id        String   @id @default(cuid())
+  name      String
+  columns   Column[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  cards     Card[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Card {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  priority    String?
+  dueDate     DateTime?    @map("due_date")
+  order       Int
+  columnId    String
+  column      Column       @relation(fields: [columnId], references: [id])
+  isArchived  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  labels      Label[]      @relation("CardToLabel")
+  activities  Activity[]
+  checklist   CheckItem[]
+  attachments Attachment[]
+  comments    Comment[]
+}
+
+model Label {
+  id     String @id @default(cuid())
+  name   String
+  color  String
+  cards  Card[] @relation("CardToLabel")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  type        String
+  description String
+  cardId      String
+  card        Card     @relation(fields: [cardId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model CheckItem {
+  id        String   @id @default(cuid())
+  content   String
+  isChecked Boolean  @default(false)
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 

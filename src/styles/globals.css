@@ -1,0 +1,44 @@
+/* Add these styles to customize the date picker */
+.react-datepicker {
+  @apply bg-[#22272B] border border-gray-700 !important;
+}
+
+.react-datepicker__header {
+  @apply bg-[#1C2024] border-gray-700 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__day {
+  @apply text-white !important;
+}
+
+.react-datepicker__day:hover {
+  @apply bg-gray-700 !important;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-blue-500 !important;
+}
+
+.react-datepicker__day--disabled {
+  @apply text-gray-600 !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  @apply border-gray-400 !important;
+}
+
+.react-datepicker__year-dropdown,
+.react-datepicker__month-dropdown {
+  @apply bg-[#22272B] border-gray-700 !important;
+}
+
+.react-datepicker__year-option:hover,
+.react-datepicker__month-option:hover {
+  @apply bg-gray-700 !important;
+}
+
+.react-datepicker__input-container input {
+  @apply bg-[#22272B] text-white border border-gray-700 rounded-lg px-3 py-2 w-full !important;
+} 

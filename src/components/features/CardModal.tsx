@@ -7,13 +7,15 @@ import { format } from 'date-fns'
 import { type Card, type Label, type ChecklistItem, type Comment } from "@/types/board"
 import Checklist from "./Checklist"
 import Comments from "./Comments"
+import DatePicker from 'react-datepicker'
+import "react-datepicker/dist/react-datepicker.css"
 
 interface CardModalProps {
   card?: Card
   onClose: () => void
-  onSave: (card: Partial<Card>) => void
-  onDelete?: (cardId: string) => void
-  availableLabels: Label[]
+  onSave: (card: Card) => void
+  onDelete: (cardId: string) => void
+  availableLabels: { id: string; name: string; color: string }[]
 }
 
 const priorityColors = {
@@ -34,7 +36,9 @@ export default function CardModal({
   const [selectedLabels, setSelectedLabels] = useState<Label[]>(card?.labels || [])
   const [showPreview, setShowPreview] = useState(false)
   const [priority, setPriority] = useState<Card['priority']>(card?.priority)
-  const [dueDate, setDueDate] = useState(card?.dueDate || "")
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    card?.dueDate ? new Date(card.dueDate) : null
+  )
   const [checklist, setChecklist] = useState<ChecklistItem[]>(card?.checklist || [])
   const [comments, setComments] = useState<Comment[]>(card?.comments || [])
 
@@ -44,7 +48,7 @@ export default function CardModal({
       description,
       labels: selectedLabels,
       priority,
-      dueDate: dueDate || undefined,
+      dueDate: selectedDate?.toISOString(),
       checklist,
       comments,
     })
@@ -149,13 +153,35 @@ export default function CardModal({
                 <Calendar size={16} className="mr-2" />
                 Due Date
               </h3>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="bg-black/30 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#579DFF]"
-                min={format(new Date(), 'yyyy-MM-dd')}
-              />
+              <div className="flex flex-col space-y-2">
+                <label className="text-sm font-medium text-gray-300">Due Date</label>
+                <div className="relative">
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date: Date) => setSelectedDate(date)}
+                    dateFormat="MMMM d, yyyy"
+                    minDate={new Date()}
+                    maxDate={new Date(new Date().setFullYear(new Date().getFullYear() + 5))}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    placeholderText="Select a due date"
+                    className="w-full bg-[#22272B] text-white border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    calendarClassName="bg-[#22272B] border border-gray-700 text-white"
+                    customInput={
+                      <div className="flex items-center">
+                        <input
+                          type="text"
+                          className="w-full bg-[#22272B] text-white border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={selectedDate ? selectedDate.toLocaleDateString() : ''}
+                          readOnly
+                        />
+                        <Calendar className="absolute right-3 text-gray-400" size={18} />
+                      </div>
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
