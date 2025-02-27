@@ -1,8 +1,8 @@
 "use client"
 
 import React from 'react'
-import { Share2, Filter, LayoutGrid, Archive, FileText } from "lucide-react"
-import { DragDropContext, Droppable } from "@hello-pangea/dnd"
+import { Filter, LayoutGrid, Archive, FileText } from "lucide-react"
+import { DragDropContext } from "@hello-pangea/dnd"
 import Column from "./Column"
 import FilterSystem from "./FilterSystem"
 import { type Column as ColumnType, type Card, type Activity } from "@/types/board"
@@ -82,6 +82,18 @@ const availableLabels = [
   { id: "5", name: "Documentation", color: "bg-orange-500" },
 ]
 
+interface DragResult {
+  destination: {
+    droppableId: string;
+    index: number;
+  } | null;
+  source: {
+    droppableId: string;
+    index: number;
+  };
+  draggableId: string;
+}
+
 export default function Board() {
   const [columns, setColumns] = useState(initialColumns)
   const [showFilters, setShowFilters] = useState(false)
@@ -103,7 +115,7 @@ export default function Board() {
   const [showArchived, setShowArchived] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
 
-  const onDragEnd = (result: any) => {
+  const handleOnDragEnd = (result: DragResult) => {
     const { destination, source, draggableId } = result
 
     if (!destination) return
@@ -232,42 +244,6 @@ export default function Board() {
     })
   }
 
-  const handleDuplicateCard = (cardId: string) => {
-    const card = columns.flatMap(col => col.cards).find(c => c.id === cardId)
-    if (!card) return
-
-    const newCard: Card = {
-      ...card,
-      id: `card-${Date.now()}`,
-      title: `${card.title} (Copy)`,
-    }
-
-    setColumns(prev => prev.map(column => {
-      if (column.cards.some(c => c.id === cardId)) {
-        return {
-          ...column,
-          cards: [...column.cards, newCard]
-        }
-      }
-      return column
-    }))
-  }
-
-  const confirmDeleteCard = () => {
-    if (!confirmDialog.cardId) return
-
-    setColumns(prev => prev.map(column => ({
-      ...column,
-      cards: column.cards.filter(card => card.id !== confirmDialog.cardId)
-    })))
-
-    setConfirmDialog({ show: false, action: 'delete' })
-  }
-
-  const handleSort = (field: string, direction: 'asc' | 'desc') => {
-    setSortConfig({ field, direction })
-  }
-
   const handleArchiveCard = (cardId: string) => {
     const card = columns.flatMap(col => col.cards).find(c => c.id === cardId)
     if (card) {
@@ -321,6 +297,10 @@ export default function Board() {
     })
   }
 
+  const handleSort = (field: string, direction: 'asc' | 'desc') => {
+    setSortConfig({ field, direction })
+  }
+
   const filteredAndSortedColumns = columns.map(column => {
     let processedCards = column.cards.filter(card => {
       if (card.isArchived) return false
@@ -342,7 +322,7 @@ export default function Board() {
     })
 
     if (sortConfig) {
-      processedCards = sortCards(processedCards, sortConfig.field as any, sortConfig.direction)
+      processedCards = sortCards(processedCards, sortConfig.field as 'title' | 'priority' | 'dueDate', sortConfig.direction as 'asc' | 'desc')
     }
 
     return {
@@ -401,7 +381,7 @@ export default function Board() {
           />
         )}
         
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragEnd={handleOnDragEnd}>
           <div className="flex space-x-4 overflow-x-auto pb-4">
             {filteredAndSortedColumns.map((column) => (
               <Column 
@@ -431,7 +411,12 @@ export default function Board() {
             title="Delete Card"
             message="Are you sure you want to delete this card? This action cannot be undone."
             confirmLabel="Delete"
-            onConfirm={confirmDeleteCard}
+            onConfirm={() => {
+              if (confirmDialog.cardId) {
+                handleDeleteCard(confirmDialog.cardId)
+              }
+              setConfirmDialog({ show: false, action: 'delete' })
+            }}
             onCancel={() => setConfirmDialog({ show: false, action: 'delete' })}
             isDestructive
           />

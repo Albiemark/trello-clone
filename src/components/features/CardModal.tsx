@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Paperclip, Tag, Eye, EyeOff, Calendar, Flag } from "lucide-react"
+import { X, Tag, Eye, EyeOff, Calendar, Flag } from "lucide-react"
 import { useState } from "react"
 import ReactMarkdown from 'react-markdown'
 import { format } from 'date-fns'

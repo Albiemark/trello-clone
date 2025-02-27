@@ -2,7 +2,6 @@
 
 import { Archive, X, RefreshCw } from "lucide-react"
 import { type Card } from "@/types/board"
-import { formatDistanceToNow } from "date-fns"
 
 interface ArchivedCardsProps {
   cards: Card[]

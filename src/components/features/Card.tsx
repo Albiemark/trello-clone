@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import { formatDistanceToNow } from 'date-fns'
 import { type Card as CardType } from "@/types/board"
 import ChartAttachment from "./ChartAttachment"
+import Image from 'next/image'
 
 interface CardProps {
   card: CardType
@@ -113,9 +114,12 @@ export default function Card({ card, onDelete, onDuplicate, onArchive }: CardPro
         <div key={attachment.id} className="mt-2">
           {attachment.type === 'chart' && <ChartAttachment />}
           {attachment.type === 'image' && (
-            <img 
-              src={attachment.url} 
-              alt="Attachment" 
+            <Image 
+              src={attachment.url}
+              alt="Attachment"
+              width={320}
+              height={240}
+              layout="responsive"
               className="w-full h-32 object-cover rounded-lg"
             />
           )}

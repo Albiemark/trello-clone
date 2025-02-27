@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, X, Tag, Calendar, Flag } from "lucide-react"
+import { Search, X, Tag, Flag } from "lucide-react"
 import { type Label, type Card } from "@/types/board"
 
 interface FilterSystemProps {

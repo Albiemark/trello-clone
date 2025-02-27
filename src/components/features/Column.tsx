@@ -2,8 +2,8 @@
 
 import { Plus } from "lucide-react"
 import { Droppable, Draggable } from "@hello-pangea/dnd"
-import Card from "./Card"
-import { type Column as ColumnType } from "@/types/board"
+import CardComponent from "./Card"
+import { type Column as ColumnType, type Card } from "@/types/board"
 
 interface ColumnProps {
   column: ColumnType
@@ -40,7 +40,7 @@ export default function Column({ column, onAddCard, onEditCard, onDeleteCard, on
                     className={snapshot.isDragging ? 'opacity-50' : ''}
                     onClick={() => onEditCard(card)}
                   >
-                    <Card 
+                    <CardComponent 
                       card={card} 
                       onDelete={onDeleteCard}
                       onArchive={onArchiveCard}
